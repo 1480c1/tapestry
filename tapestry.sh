@@ -175,14 +175,13 @@ tapestry-download() {
             (o) opt_path=$OPTARG;;
             (v) opt_verbose=1;;
             (p) opt_no_progress=;;
+            (*) break ;;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     if [ -z "$opt_url" ] || [ -z "$opt_path" ]; then
-        printf $'Expected url and path\n' >&2
-        printf $'  Got url = %s\n' "$opt_url" >&2
-        printf $'  Got path = %s\n' "$opt_path" >&2
+        printf 'Expected url and path\n  Got url = %s\n  Got path = %s\n' "$opt_url" "$opt_path" >&2
         exit 1
     fi
 
@@ -193,11 +192,9 @@ tapestry-download() {
         tapestry-run ${opt_verbose:+-v} \
             wget ${opt_no_progress:+-q} -O "$opt_path" "$opt_url"
     else
-        printf $'Cannot download file from web: no valid executables.\n' >&2
-        printf $'Please download the following URL and save it at the\n' >&2
-        printf $'following path\n\n' >&2
-        printf $'URL = %s\n\n' "$opt_url" >&2
-        printf $'PATH = %s\n\n' "$opt_path" >&2
+        printf 'Cannot download file from web: no valid executables.\n' >&2
+        printf 'Please download the following URL and save it at the\n' >&2
+        printf 'following path\n\nURL = %s\n\nPATH = %s\n\n' "$opt_url" "$opt_path" >&2
         exit 1
     fi
 }
