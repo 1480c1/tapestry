@@ -926,7 +926,7 @@ tapestry-do-scale() {
             (\?) tapestry-usage -n $LINENO -e "Unknown option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
     opt_replicas=$1; shift
 
     if ! [ "$opt_replicas" -eq "$opt_replicas" ] 2>/dev/null; then
