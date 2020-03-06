@@ -539,7 +539,7 @@ tapestry-do-run() {
 #         The name of the service to check (default "tapestry")
 #
 tapestry-do-shell() {
-    local opt_verbose opt_name opt OPTIND OPTARG IFS lines first id id2
+    local opt_verbose opt_name opt OPTIND OPTARG IFS lines id
     opt_verbose=
     opt_name=tapestry
     while getopts ":n:hv" opt; do
@@ -550,23 +550,20 @@ tapestry-do-shell() {
             (\?) tapestry-usage -n $LINENO -e "Unexpected option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
-    IFS=$'\n'
-    lines=( $(tapestry-run ${opt_verbose:+-v} \
-                           ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ps \
-                           "$opt_name") )
+    mapfile -t lines < <(
+        tapestry-run ${opt_verbose:+-v} \
+            ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ps \
+            "$opt_name"
+    )
 
-    IFS=$' '
-    first=( ${lines[1]} )
-
-    id=${first[0]}
-    id2=$(tapestry-run ${opt_verbose:+-v} \
+    id=$(tapestry-run ${opt_verbose:+-v} \
                        ${TAPESTRY_DOCKER_SUDO:+sudo} docker inspect \
-                       --format "{{.Status.ContainerStatus.ContainerID}}" "$id")
+                       --format "{{.Status.ContainerStatus.ContainerID}}" "${lines[1]%% *}")
 
     tapestry-run ${opt_verbose:+-v} \
-        ${TAPESTRY_DOCKER_SUDO:+sudo} docker exec -it "$id2" /bin/bash
+        ${TAPESTRY_DOCKER_SUDO:+sudo} docker exec -it "$id" /bin/bash
 }
 
 ################################################################################
