@@ -402,15 +402,14 @@ tapestry-do-stop() {
             (\?) tapestry-usage -n $LINENO -e "unexpected option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     tapestry-run ${opt_verbose:+-v} \
         ${TAPESTRY_DOCKER_SUDO:+sudo} docker service rm "$opt_name"
 
-    tapestry-run ${opt_verbose:+-v} \
-        ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ls | grep -q tapestry_nginx
-
-    if [ $? -eq 0 ]; then
+    if tapestry-run ${opt_verbose:+-v} \
+            ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ls |
+            grep -q tapestry_nginx; then
         tapestry-run ${opt_verbose:+-v} \
             ${TAPESTRY_DOCKER_SUDO:+sudo} docker service rm tapestry_nginx
     fi
