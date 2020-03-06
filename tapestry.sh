@@ -342,28 +342,23 @@ tapestry-do-build() {
             (\?) tapestry-usage -n $LINENO -e "unexpected option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     # create overlay network if doesn't exist
-    tapestry-run ${opt_verbose:+-v}
-        ${TAPESTRY_DOCKER_SUDO:+sudo} docker network ls \
-        | grep -q "tapestry_network"
-
-
-    if [ $? -eq 1 ]; then
-        tapestry-run ${opt_verbose:+v}
+    if ! tapestry-run ${opt_verbose:+-v} \
+            ${TAPESTRY_DOCKER_SUDO:+sudo} docker network ls |
+            grep -q "tapestry_network"; then
+        tapestry-run ${opt_verbose:+v} \
             ${TAPESTRY_DOCKER_SUDO:+sudo} docker network create \
             -d overlay tapestry_network
     fi;
 
-    tapestry-run ${opt_verbose:+-v} \
+    if tapestry-run ${opt_verbose:+-v} \
             ${TAPESTRY_DOCKER_SUDO:+sudo} docker build \
             ${opt_parallel:+--build-arg build_parallel="-j $opt_parallel"} \
             ${opt_minify:+--build-arg minifyjs=1} \
             ${opt_tag:+-t "$opt_tag"} \
-            tapestry
-
-    if [ $? -ne 0 ]; then
+            tapestry; then
         echo "Error: Could not build the image";
         return 1;
     fi
