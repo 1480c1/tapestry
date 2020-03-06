@@ -647,7 +647,7 @@ tapestry-do-examples() {
             (\?) tapestry-usage -n $LINENO -e "Unknown option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     if ! [ -e tapestry_examples.tar.gz ]; then
         tapestry-download \
@@ -743,54 +743,50 @@ tapestry-do-autoscale() {
             (\?) tapestry-usage -n $LINENO -e "Unknown option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     scale_up_counter=0
     scale_down_counter=0
 
     ${TAPESTRY_DOCKER_SUDO:+sudo} true  # open sudo session if necessary
 
-    printf $'Monitoring %s...\n' "$opt_name"
+    printf 'Monitoring %s...\n' "$opt_name"
 
     while sleep "$opt_interval"; do
         # Get container IDs for Tapestry nodes
 
-        IFS=$'\n'
-        lines=( $(tapestry-run ${opt_verbose:+-v} \
-                               ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ps \
-                               "$opt_name" --no-resolve) )
+        mapfile -t lines < <(
+            tapestry-run ${opt_verbose:+-v} \
+                ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ps \
+                "$opt_name" --no-resolve
+        )
 
-        IFS=$' '
-        parts=( ${lines[0]} )
-        [ "${parts[0]}" = ID ] || printf $'Incorrect format: ID\n' >&2
-        [ "${parts[1]}" = NAME ] || printf $'Incorrect format: NAME\n' >&2
-        [ "${parts[2]}" = IMAGE ] || printf $'Incorrect format: IMAGE\n' >&2
-        [ "${parts[3]}" = NODE ] || printf $'Incorrect format: NODE\n' >&2
-        [ "${parts[4]}" = DESIRED ] || printf $'Incorrect format: DESIRED\n' >&2
-        [ "${parts[5]}" = STATE ] || printf $'Incorrect format: STATE\n' >&2
-        [ "${parts[6]}" = CURRENT ] || printf $'Incorrect format: CURRENT\n' >&2
-        [ "${parts[7]}" = STATE ] || printf $'Incorrect format: STATE\n' >&2
-        [ "${parts[8]}" = ERROR ] || printf $'Incorrect format: ERROR\n' >&2
+        IFS=' ' read -ra parts <<< "${lines[0]}"
+        [ "${parts[0]}" = ID ] || printf 'Incorrect format: ID\n' >&2
+        [ "${parts[1]}" = NAME ] || printf 'Incorrect format: NAME\n' >&2
+        [ "${parts[2]}" = IMAGE ] || printf 'Incorrect format: IMAGE\n' >&2
+        [ "${parts[3]}" = NODE ] || printf 'Incorrect format: NODE\n' >&2
+        [ "${parts[4]}" = DESIRED ] || printf 'Incorrect format: DESIRED\n' >&2
+        [ "${parts[5]}" = STATE ] || printf 'Incorrect format: STATE\n' >&2
+        [ "${parts[6]}" = CURRENT ] || printf 'Incorrect format: CURRENT\n' >&2
+        [ "${parts[7]}" = STATE ] || printf 'Incorrect format: STATE\n' >&2
+        [ "${parts[8]}" = ERROR ] || printf 'Incorrect format: ERROR\n' >&2
 
         ids=()
         for line in "${lines[@]:1:1000}"; do  # skip header line
-            IFS=$' '
-            parts=( $line )
-
-            ids+=( "${parts[0]}" )
+            ids+=( "${line%% *}" )
         done
 
         # Get actual container IDs for Tapestry instances
-
-        IFS=$'\n'
-        lines=( $(tapestry-run ${opt_verbose:+-v} \
-                               ${TAPESTRY_DOCKER_SUDO:+sudo} docker ps \
-                               --no-trunc --format "{{.Names}}\t{{.ID}}") )
+        mapfile -t lines < <(
+            tapestry-run ${opt_verbose:+-v} \
+                ${TAPESTRY_DOCKER_SUDO:+sudo} docker ps \
+                --no-trunc --format "{{.Names}}\t{{.ID}}"
+        )
 
         containers=()
         for line in "${lines[@]}"; do
-            IFS=$'\t'
-            parts=( $line )
+            IFS=$'\t' read -ra parts <<< "$line"
 
             for id in "${ids[@]}"; do
                 case "${parts[0]}" in
@@ -803,52 +799,49 @@ tapestry-do-autoscale() {
         done
 
         # Get stats for the Tapestry instances
+        mapfile -t lines < <(
+            tapestry-run ${opt_verbose:+-v} \
+                ${TAPESTRY_DOCKER_SUDO:+sudo} docker stats \
+                --no-stream "${containers[@]}"
+        )
 
-        IFS=$'\n'
-        lines=( $(tapestry-run ${opt_verbose:+-v} \
-                               ${TAPESTRY_DOCKER_SUDO:+sudo} docker stats \
-                               --no-stream "${containers[@]}") )
-
-        IFS=$' '
-        parts=( ${lines[0]} )
-        [ "${parts[0]}" = CONTAINER ] || printf $'Incorrect format: CONTAINER\n' >&2
-        [ "${parts[1]}" = CPU ] || printf $'Incorrect format: CPU\n' >&2
-        [ "${parts[2]}" = % ] || printf $'Incorrect format: %\n' >&2
-        [ "${parts[3]}" = MEM ] || printf $'Incorrect format: MEM\n' >&2
-        [ "${parts[4]}" = USAGE ] || printf $'Incorrect format: USAGE\n' >&2
-        [ "${parts[5]}" = / ] || printf $'Incorrect format: /\n' >&2
-        [ "${parts[6]}" = LIMIT ] || printf $'Incorrect format: LIMIT\n' >&2
-        [ "${parts[7]}" = MEM ] || printf $'Incorrect format: MEM\n' >&2
-        [ "${parts[8]}" = % ] || printf $'Incorrect format: %\n' >&2
-        [ "${parts[9]}" = NET ] || printf $'Incorrect format: NET\n' >&2
-        [ "${parts[10]}" = I/O ] || printf $'Incorrect format: I/O\n' >&2
-        [ "${parts[11]}" = BLOCK ] || printf $'Incorrect format: BLOCK\n' >&2
-        [ "${parts[12]}" = I/O ] || printf $'Incorrect format: I/O\n' >&2
-        [ "${parts[13]}" = PIDS ] || printf $'Incorrect format: PIDS\n' >&2
+        IFS=' ' read -ra parts <<< "${lines[0]}"
+        [ "${parts[0]}" = CONTAINER ] || printf 'Incorrect format: CONTAINER\n' >&2
+        [ "${parts[1]}" = CPU ] || printf 'Incorrect format: CPU\n' >&2
+        [ "${parts[2]}" = % ] || printf 'Incorrect format: %%\n' >&2
+        [ "${parts[3]}" = MEM ] || printf 'Incorrect format: MEM\n' >&2
+        [ "${parts[4]}" = USAGE ] || printf 'Incorrect format: USAGE\n' >&2
+        [ "${parts[5]}" = / ] || printf 'Incorrect format: /\n' >&2
+        [ "${parts[6]}" = LIMIT ] || printf 'Incorrect format: LIMIT\n' >&2
+        [ "${parts[7]}" = MEM ] || printf 'Incorrect format: MEM\n' >&2
+        [ "${parts[8]}" = % ] || printf 'Incorrect format: %%\n' >&2
+        [ "${parts[9]}" = NET ] || printf 'Incorrect format: NET\n' >&2
+        [ "${parts[10]}" = I/O ] || printf 'Incorrect format: I/O\n' >&2
+        [ "${parts[11]}" = BLOCK ] || printf 'Incorrect format: BLOCK\n' >&2
+        [ "${parts[12]}" = I/O ] || printf 'Incorrect format: I/O\n' >&2
+        [ "${parts[13]}" = PIDS ] || printf 'Incorrect format: PIDS\n' >&2
 
         cpu=0
         for line in "${lines[@]:1:1000}"; do  # skip header line
-            IFS=$' '
-            parts=( $line )
-
+            IFS=' ' read -ra parts <<< "$line"
             # Parse CPU values and compute with them in units of hundredths of
             # a percent
             case "${parts[1]}" in
-                (?.??%)    cpu=$(($cpu + ${parts[1]:0:1}${parts[1]:2:2}));;
-                (??.??%)   cpu=$(($cpu + ${parts[1]:0:2}${parts[1]:3:2}));;
-                (???.??%)  cpu=$(($cpu + ${parts[1]:0:3}${parts[1]:4:2}));;
-                (????.??%) cpu=$(($cpu + ${parts[1]:0:4}${parts[1]:5:2}));;
-                (*) printf $'Bad CPU value from docker: %s\n' "${parts[1]}" >&2;;
+                (?.??%)    : $((cpu += ${parts[1]:0:1}${parts[1]:2:2}));;
+                (??.??%)   : $((cpu += ${parts[1]:0:2}${parts[1]:3:2}));;
+                (???.??%)  : $((cpu += ${parts[1]:0:3}${parts[1]:4:2}));;
+                (????.??%) : $((cpu += ${parts[1]:0:4}${parts[1]:5:2}));;
+                (*) printf 'Bad CPU value from docker: %s\n' "${parts[1]}" >&2;;
             esac
         done
 
         if [ "$cpu" -gt "$opt_max_cpu" ]; then
-            scale_up_counter=$(($scale_up_counter + 1))
+            : $((scale_up_counter += 1))
             scale_down_counter=0
         fi
 
         if [ "$cpu" -lt "$opt_min_cpu" ]; then
-            scale_down_counter=$(($scale_down_counter + 1))
+            : $((scale_down_counter += 1))
             scale_up_counter=0
         fi
 
@@ -859,33 +852,30 @@ tapestry-do-autoscale() {
         fi
 
         # Determine the current number of replicas
+        mapfile -t lines < <(
+            tapestry-run ${opt_verbose:+-v} \
+                ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ls \
+                --filter name="$opt_name"
+        )
 
-        IFS=$'\n'
-        lines=( $(tapestry-run ${opt_verbose:+-v} \
-                               ${TAPESTRY_DOCKER_SUDO:+sudo} docker service ls \
-                               --filter name="$opt_name") )
-
-        IFS=$' '
-        parts=( ${lines[0]} )
-        [ "${parts[0]}" = ID ] || printf $'Incorrect format: ID\n' >&2
-        [ "${parts[1]}" = NAME ] || printf $'Incorrect format: NAME\n' >&2
-        [ "${parts[2]}" = REPLICAS ] || printf $'Incorrect format: REPLICAS\n' >&2
-        [ "${parts[3]}" = IMAGE ] || printf $'Incorrect format: IMAGE\n' >&2
-        [ "${parts[4]}" = COMMAND ] || printf $'Incorrect format: COMMAND\n' >&2
+        IFS=' ' read -ra parts <<< "${lines[0]}"
+        [ "${parts[0]}" = ID ] || printf 'Incorrect format: ID\n' >&2
+        [ "${parts[1]}" = NAME ] || printf 'Incorrect format: NAME\n' >&2
+        [ "${parts[2]}" = REPLICAS ] || printf 'Incorrect format: REPLICAS\n' >&2
+        [ "${parts[3]}" = IMAGE ] || printf 'Incorrect format: IMAGE\n' >&2
+        [ "${parts[4]}" = COMMAND ] || printf 'Incorrect format: COMMAND\n' >&2
 
         # Should only get one line, but could have more
         for line in "${lines[@]:1:1000}"; do  # skip header line
-            IFS=$' '
-            parts=( $line )
-
+            IFS=' ' read -ra parts <<< "$line"
             replicas=${parts[2]%%/*}  # i.e. with 3/4, grab the 3 part
         done
 
         if [ "$scale_up_counter" -gt "$opt_trigger_threshold" ]; then
-            printf $'[%s] Scaling up to %s\n' "$(date)" "$(($replicas + 1))"
+            printf '[%s] Scaling up to %s\n' "$(date)" $((replicas + 1))
             tapestry-run ${opt_verbose:+-v} -o /dev/null \
                          ${TAPESTRY_DOCKER_SUDO:+sudo} docker service scale \
-                         "$opt_name=$(($replicas + 1))"
+                         "$opt_name=$((replicas + 1))"
             scale_up_counter=0
             scale_down_counter=0
             sleep "$opt_cooldown"
@@ -893,10 +883,10 @@ tapestry-do-autoscale() {
 
         if [ "$scale_down_counter" -gt "$opt_trigger_threshold" ] &&
            [ "$replicas" -gt "$opt_min_containers" ]; then
-            printf $'[%s] Scaling down to %s\n' "$(date)" "$(($replicas - 1))"
+            printf $'[%s] Scaling down to %s\n' "$(date)" $((replicas - 1))
             tapestry-run ${opt_verbose:+-v} -o /dev/null \
                          ${TAPESTRY_DOCKER_SUDO:+sudo} docker service scale \
-                         "$opt_name=$(($replicas - 1))"
+                         "$opt_name=$((replicas - 1))"
             scale_up_counter=0
             scale_down_counter=0
             sleep "$opt_cooldown"
