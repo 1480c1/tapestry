@@ -953,9 +953,8 @@ tapestry-do-scale() {
 #     Gives a report on the cache's hits and misses
 #
 tapestry-do-cache-report() {
-    local container_id
-    container_id=$(docker ps | grep tapestry_nginx | awk '{print $1}');
-    docker exec -t $container_id /bin/bash -c "awk '{print $1}' \
+    docker exec -t "$(docker ps | grep tapestry_nginx | awk '{print $1}')" \
+        /bin/bash -c "awk '{print $1}' \
         /var/log/nginx/cache.log \
         | cut -d '[' -f 1 \
         | cut -d '-' -f 2 \
@@ -991,16 +990,17 @@ tapestry-usage() {
             (h) tapestry-usage -n $LINENO;;
             (n) opt_lineno=$OPTARG;;
             (e) opt_error=1;;
+            (*) break ;;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
     opt_message=$1; shift
 
     exec 8<&0 <"$TAPESTRY_SELF"
     num=0
     docs=()
     while IFS=$'\n' read -r  line; do
-        num=$(($num + 1))
+        num=$((num + 1))
 
         case "$line" in
             (\#\#\#\#*) docs=();;
@@ -1012,7 +1012,7 @@ tapestry-usage() {
             for line in "${docs[@]}"; do
                 line=${line#\#*}
                 line=${line# }
-                printf $'%s\n' "${line#\#*}"
+                printf '%s\n' "${line#\#*}"
             done
             break
         fi
@@ -1020,7 +1020,7 @@ tapestry-usage() {
     exec <&8 8<&-
 
     if [ -n "$opt_message" ]; then
-        printf $'Error: %s\n' "$opt_message"
+        printf 'Error: %s\n' "$opt_message"
     fi
 
     if [ -n "$opt_error" ]; then
@@ -1070,9 +1070,10 @@ tapestry() {
             (s) opt_sudo=1;;
             (n) opt_dryrun=1;;
             (\?) tapestry-usage -n $LINENO -e "unexpected option: -$OPTARG";;
+            (*) break ;;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
     opt_action=$1; shift
 
     if [ -n "$opt_sudo" ]; then
