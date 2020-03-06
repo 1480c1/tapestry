@@ -92,33 +92,33 @@ tapestry-extract() {
     opt_directory=
     opt_list=
     opt_verbose=
-    while getopts "f:d:hvl" opt; do
+    while getopts ":f:d:hvl" opt; do
         case "$opt" in
             (h) tapestry-usage -n $LINENO;;
             (l) opt_list=1;;
             (v) opt_verbose=1;;
             (f) opt_archive=$OPTARG;;
             (d) opt_directory=$OPTARG;;
+            (*) break ;;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     if [ -z "$opt_archive" ]; then
         tapestry-usage -n $LINENO -e "Missing required argument: ARCHIVE"
     fi
 
-    IFS=$'.'
-    parts=( $opt_archive )
+    IFS='.' read -r -a parts <<< "$opt_archive"
     n=${#parts[@]}
 
-    while [ $n -gt 0 ]; do
-        n=$(($n - 1))
+    while [ "$n" -gt 0 ]; do
+        n=$((n - 1))
 
-        IFS=$'.'
+        IFS='.'
         set -- "${parts[@]:$n:100}"
         case "$*" in
             (tar.gz)
-                IFS=$' '
+                IFS=' '
 
                 if ! [ -d "$opt_directory" ]; then
                     mkdir "$opt_directory"
