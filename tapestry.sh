@@ -232,41 +232,41 @@ tapestry-do-depend() {
             (\?) tapestry-usage -n $LINENO -e "Unexpected option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     has_git=1
-    if ! which git &>/dev/null; then
-        printf $'Error: git not installed\n' >&2
-        printf $'  Fix: sudo apt-get install git\n\n' >&2
+    if ! type git &>/dev/null; then
+        printf 'Error: git not installed\n' >&2
+        printf '  Fix: sudo apt-get install git\n\n' >&2
         has_git=
     fi
 
     has_docker=1
-    if ! which docker &>/dev/null; then
-        printf $'Error: docker not installed\n' >&2
-        printf $'  Fix: sudo apt-get install docker.io\n\n' >&2
+    if ! type docker &>/dev/null; then
+        printf 'Error: docker not installed\n' >&2
+        printf '  Fix: sudo apt-get install docker.io\n\n' >&2
         has_docker=
     fi
 
     has_docker_perm=1
     if ! ${TAPESTRY_DOCKER_SUDO:+sudo} docker ps &>/dev/null; then
-        printf $'Error: docker not accessible from current user\n' >&2
-        printf $'  Fix: Rerun command with -s: ./tapestry.sh -s depend\n' >&2
-        printf $'  Alt: sudo gpasswd -a $USER docker && newgrp docker\n' >&2
-        printf $' NOTE: https://askubuntu.com/a/477554\n\n' >&2
+        printf 'Error: docker not accessible from current user\n' >&2
+        printf '  Fix: Rerun command with -s: ./tapestry.sh -s depend\n' >&2
+        printf '  Alt: sudo gpasswd -a $USER docker && newgrp docker\n' >&2
+        printf ' NOTE: https://askubuntu.com/a/477554\n\n' >&2
         has_docker_perm=
     fi
 
     has_docker_swarm=1
     if ! ${TAPESTRY_DOCKER_SUDO:+sudo} docker node ls &>/dev/null; then
-        printf $'Error: docker swarm not initialized\n' >&2
-        printf $'  Fix: %sdocker swarm init\n\n' \
+        printf 'Error: docker swarm not initialized\n' >&2
+        printf '  Fix: %sdocker swarm init\n\n' \
                "${TAPESTRY_DOCKER_SUDO:+sudo }" >&2
         has_docker_swarm=
     fi
 
     if ! [ "$has_git$has_docker$has_docker_perm$has_docker_swarm" = 1111 ]; then
-        printf $'Please fix errors before rerunning this command.\n' >&2
+        printf 'Please fix errors before rerunning this command.\n' >&2
         exit 1
     fi
 
