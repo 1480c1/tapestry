@@ -461,7 +461,7 @@ tapestry-do-stop() {
 #
 tapestry-do-run() {
     local opt_verbose opt_config opt_data opt_port opt_name opt_tag \
-        opt_app_dir opt_enable_cache opt OPTIND OPTARG
+        opt_app_dir opt_enable_cache=false opt OPTIND OPTARG
     opt_verbose=
     opt_config=
     opt_data=
@@ -469,7 +469,6 @@ tapestry-do-run() {
     opt_name=tapestry
     opt_tag=tapestry_tapestry
     opt_app_dir=
-    opt_enable_cache=
     opt_disable_cache=1
     while getopts ":c:d:p:n:t:a:hvk" opt; do
         case "$opt" in
@@ -481,18 +480,18 @@ tapestry-do-run() {
             (n) opt_name=$OPTARG;;
             (t) opt_tag=$OPTARG;;
             (a) opt_app_dir=$(realpath "$OPTARG");;
-            (k) opt_enable_cache=1;;
+            (k) opt_enable_cache=true;;
             (\?) tapestry-usage -n $LINENO -e "unexpected option: -$OPTARG";;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
     if [ -z "$opt_config" ] || [ -z "$opt_data" ]; then
         tapestry-usage -n $LINENO -e "expected config and data directories"
         exit 1
     fi
 
-    if [[ $opt_enable_cache = 1 ]]; then
+    if $opt_enable_cache; then
         unset opt_disable_cache
     fi
 
@@ -508,7 +507,7 @@ tapestry-do-run() {
         ${opt_app_dir:+--env APP_DIR=/app} \
         "$opt_tag"
 
-    if [[ $opt_enable_cache = 1 ]]; then
+    if $opt_enable_cache; then
         tapestry-run ${opt_verbose:+-v} \
             ${TAPESTRY_DOCKER_SUDO:+sudo} docker service create \
             --mode global \
