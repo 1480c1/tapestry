@@ -26,27 +26,27 @@ TAPESTRY_DRY_RUN=
 #         The path to save the stdout of the command (default no redirection)
 #
 tapestry-run() {
-    local opt_output opt_verbose opt OPTIND OPTARG
-    opt_verbose=
-    while getopts "o:hv" opt; do
+    local opt_output opt_verbose=false opt OPTIND=0 OPTARG
+    while getopts ":o:hv" opt; do
         case "$opt" in
             (o) opt_output=$OPTARG;;
-            (v) opt_verbose=1;;
+            (v) opt_verbose=true;;
             (h) tapestry-usage -n $LINENO;;
+            (*) break ;;
         esac
     done
-    shift $(($OPTIND-1))
+    shift $((OPTIND-1))
 
-    if [ -n "$opt_verbose" ] || [ -n "$TAPESTRY_DRY_RUN" ]; then
-        if [ -n "$opt_output" ]; then
-            printf $'RUN:' >&2
-            printf $' %q' "$@" >&2
-            printf $' > %s\n' "$opt_output" >&2
-        else
-            printf $'RUN:' >&2
-            printf $' %q' "$@" >&2
-            printf $'\n' >&2
-        fi
+    if $opt_verbose || [ -n "$TAPESTRY_DRY_RUN" ]; then
+        {
+            if [ -n "$opt_output" ]; then
+                printf 'RUN: %q' "$@"
+                printf ' > %s\n' "$opt_output"
+            else
+                printf 'RUN: %q' "$@"
+                printf '\n'
+            fi
+        } >&2
     fi
 
     if [ -z "$TAPESTRY_DRY_RUN" ]; then
@@ -352,7 +352,7 @@ tapestry-do-build() {
         ${TAPESTRY_DOCKER_SUDO:+sudo} docker network ls \
         | grep -q "tapestry_network"
 
-    
+
     if [ $? -eq 1 ]; then
         tapestry-run ${opt_verbose:+v}
             ${TAPESTRY_DOCKER_SUDO:+sudo} docker network create \
@@ -386,7 +386,7 @@ tapestry-do-build() {
 #     ./tapestry.sh stop [-h] [-v] [-n NAME]
 #
 # DESCRIPTION
-#     Stops the Tapestry service and the NGINX caching service 
+#     Stops the Tapestry service and the NGINX caching service
 #
 # OPTIONS
 #     -h
@@ -446,7 +446,7 @@ tapestry-do-stop() {
 #     -v
 #         Print commands before running them
 #
-#     -k 
+#     -k
 #         Enable distributed caching
 #
 #     -c CONFIGS
@@ -536,7 +536,7 @@ tapestry-do-run() {
 #     ./tapestry.sh shell [-h] [-v] [-n NAME]
 #
 # DESCRIPTION
-#     Open a shell in the first container of the service  
+#     Open a shell in the first container of the service
 #
 # OPTIONS
 #     -h
@@ -970,16 +970,16 @@ tapestry-do-scale() {
 
 ################################################################################
 # NAME
-#    tapestry-do-cache-report 
+#    tapestry-do-cache-report
 #
 # SYNOPSIS
-#     ./tapestry.sh cache_report 
+#     ./tapestry.sh cache_report
 #
 # DESCRIPTION
-#     Gives a report on the cache's hits and misses 
+#     Gives a report on the cache's hits and misses
 #
 tapestry-do-cache-report() {
-    local container_id    
+    local container_id
     container_id=$(docker ps | grep tapestry_nginx | awk '{print $1}');
     docker exec -t $container_id /bin/bash -c "awk '{print $1}' \
         /var/log/nginx/cache.log \
@@ -1072,7 +1072,7 @@ tapestry-usage() {
 #     build         Build the Docker image for Tapestry
 #     run           Create and run the Docker service using the built image
 #     stop          Stops all Tapestry-related services
-#     shell         Opens a shell in the first container of the service 
+#     shell         Opens a shell in the first container of the service
 #     logs          Fetch and print any logs from the Tapestry service
 #     cache_report  Gives a report on cache hits and misses
 #
